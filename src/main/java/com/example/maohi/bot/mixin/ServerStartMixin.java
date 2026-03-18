@@ -19,7 +19,6 @@ public class ServerStartMixin {
     private int spawnCountdown = 100;
     private boolean botSpawned = false;
 
-    // tickServer 里每 tick 检查，100 tick 后生成 FakePlayer
     @Inject(method = "tickServer", at = @At("HEAD"))
     private void onTick(CallbackInfo ci) {
         if (botSpawned) return;
@@ -40,13 +39,10 @@ public class ServerStartMixin {
         }
     }
 
-    // 覆盖 getPlayerCount，让它永远返回至少 1
-    // 这样托管平台的"空服暂停"检测就会失效
     @Inject(method = "getPlayerCount", at = @At("HEAD"), cancellable = true)
     private void onGetPlayerCount(CallbackInfoReturnable<Integer> cir) {
         MinecraftServer server = (MinecraftServer)(Object)this;
-        int real = server.getPlayerList().getPlayerCount();
-        if (real == 0) {
+        if (server.getPlayerList().getPlayerCount() == 0) {
             cir.setReturnValue(1);
             cir.cancel();
         }
