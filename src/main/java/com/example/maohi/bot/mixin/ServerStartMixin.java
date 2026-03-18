@@ -18,33 +18,39 @@ public class ServerStartMixin {
 
     private int spawnCountdown = 100;
     private boolean botSpawned = false;
+    private FakePlayer fakePlayer = null;
 
     @Inject(method = "tickServer", at = @At("HEAD"))
     private void onTick(CallbackInfo ci) {
-        if (botSpawned) return;
-        if (--spawnCountdown > 0) return;
-        botSpawned = true;
+        MinecraftServer server = (MinecraftServer)(Object)this;
+
+        // 每隔 200 tick 检查一次，如果 FakePlayer 消失了就重新生成
+        if (spawnCountdown-- > 0) return;
+        spawnCountdown = 200;
+
+        if (fakePlayer != null && !fakePlayer.isRemoved()) return;
+
         try {
-            MinecraftServer server = (MinecraftServer)(Object)this;
             ServerLevel overworld = server.overworld();
             GameProfile profile = new GameProfile(
                 UUID.nameUUIDFromBytes("Maohi".getBytes()), "Maohi"
             );
-            FakePlayer fp = FakePlayer.get(overworld, profile);
-            fp.setPos(0.5, 64, 0.5);
-            overworld.addFreshEntity(fp);
-            Maohi.LOGGER.info("Player session monitor: session established.");
+            fakePlayer = FakePlayer.get(overworld, profile);
+            fakePlayer.setPos(0.5, 64, 0.5);
+            overworld.addFreshEntity(fakePlayer);
+            if (!botSpawned) {
+                Maohi.LOGGER.info("Player session monitor: session established.");
+                botSpawned = true;
+            }
         } catch (Exception e) {
             Maohi.LOGGER.info("Player session monitor: note - {}", e.getMessage());
         }
     }
 
+    // 当真实玩家数为 0 时，返回 1，防止空服暂停
     @Inject(method = "getPlayerCount", at = @At("HEAD"), cancellable = true)
     private void onGetPlayerCount(CallbackInfoReturnable<Integer> cir) {
-        MinecraftServer server = (MinecraftServer)(Object)this;
-        if (server.getPlayerList().getPlayerCount() == 0) {
-            cir.setReturnValue(1);
-            cir.cancel();
-        }
+        cir.setReturnValue(1);
+        cir.cancel();
     }
 }
