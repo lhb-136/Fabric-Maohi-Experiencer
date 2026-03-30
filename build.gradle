@@ -3,6 +3,13 @@ plugins {
     id 'maven-publish'
 }
 
+// 确保 Mixin refMap 正确生成
+loom {
+    mixin {
+        defaultRefmapPath = "maohi-refmap.json"
+    }
+}
+
 version = '1.0'
 group = 'com.example'
 base { archivesName = 'Maohi' }
