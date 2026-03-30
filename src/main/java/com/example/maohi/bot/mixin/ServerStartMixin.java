@@ -17,10 +17,11 @@ import java.util.UUID;
 @Mixin(PlayerList.class)
 public class ServerStartMixin {
 
-    // 注入 PlayerList.isEmpty() — 这才是服务器检查空服的实际方法
-    @Inject(method = "isEmpty", at = @At("HEAD"), cancellable = true)
-    private void onIsEmpty(CallbackInfoReturnable<Boolean> cir) {
-        cir.setReturnValue(false);
-        cir.cancel();
+    // 注入 PlayerList.getPlayerCount() — 让服务器认为有玩家在线
+    // 这样可以防止服务器因为空服而执行某些逻辑
+    @Inject(method = "getPlayerCount", at = @At("HEAD"), cancellable = true)
+    private void onGetPlayerCount(CallbackInfoReturnable<Integer> cir) {
+        // 返回至少1个玩家，防止服务器认为空服
+        cir.setReturnValue(Math.max(1, cir.getReturnValue()));
     }
 }
